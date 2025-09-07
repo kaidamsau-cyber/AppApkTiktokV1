@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TikTok Preview & Open</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto;}
+    input[type="text"]{ width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box;}
+    button { padding: 10px 16px; margin-right: 8px; cursor: pointer; }
+    #embedArea { margin-top: 16px; }
+    .note { color: #666; font-size: 0.9rem; margin-top: 10px; }
+    iframe { width: 100%; border: none; min-height: 400px; }
+  </style>
+</head>
+<body>
+  <h1>TikTok — Nhập URL để xem</h1>
+
+  <label for="url">Dán URL TikTok (ví dụ: https://www.tiktok.com/@user/video/123...)</label>
+  <input id="url" type="text" placeholder="Dán URL TikTok vào đây" />
+
+  <div>
+    <button id="previewBtn">Xem nhúng</button>
+    <button id="openBtn">Mở trang TikTok gốc</button>
+  </div>
+
+  <div id="embedArea"></div>
+
+  <p class="note">
+    Lưu ý: công cụ này chỉ giúp xem video và mở trang gốc. Nếu chủ video cho phép, bạn có thể
+    sử dụng nút "Save video" trên ứng dụng/website TikTok để tải xuống hợp pháp. Mình <strong>không</strong> hỗ trợ
+    gỡ watermark hoặc vi phạm quyền tác giả.
+  </p>
+
+  <script>
+    const previewBtn = document.getElementById('previewBtn');
+    const openBtn = document.getElementById('openBtn');
+    const urlInput = document.getElementById('url');
+    const embedArea = document.getElementById('embedArea');
+
+    function normalizeTikTokUrl(u) {
+      try {
+        const url = new URL(u.trim());
+        // nếu là share.tiktok.com thì trả về as-is
+        if (url.hostname.includes('tiktok.com')) return url.href;
+        // nếu người dùng dán chỉ id thì không xử lý
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    previewBtn.addEventListener('click', () => {
+      const raw = urlInput.value;
+      const turl = normalizeTikTokUrl(raw);
+      embedArea.innerHTML = '';
+      if (!turl) {
+        embedArea.innerHTML = '<p style="color: red;">URL không hợp lệ — hãy dán một liên kết TikTok đầy đủ.</p>';
+        return;
+      }
+
+      // TikTok cung cấp cách nhúng bằng blockquote + script (oEmbed). Ta dùng iframe embed đơn giản bằng trang share.
+      // Lưu ý: một số video có chặn nhúng -> iframe có thể bị chặn.
+      const iframe = document.createElement('iframe');
+      // dùng trang "www.tiktok.com/embed" để nhúng video
+      // chuyển url dạng: https://www.tiktok.com/embed/v2/<videoId> có thể yêu cầu ID -> ở đây mở trang tiktok share trong iframe (phổ biến hơn)
+      iframe.src = turl.replace('www.tiktok.com', 'www.tiktok.com/embed'); // thử chuyển thành embed
+      iframe.loading = 'lazy';
+      iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+      embedArea.appendChild(iframe);
+
+      // Nếu iframe bị chặn, show link thay thế
+      const fallback = document.createElement('p');
+      fallback.innerHTML = `Nếu nhúng không hiển thị, <a href="${turl}" target="_blank" rel="noopener">mở trang TikTok gốc</a>.`;
+      embedArea.appendChild(fallback);
+    });
+
+    openBtn.addEventListener('click', () => {
+      const turl = normalizeTikTokUrl(urlInput.value);
+      if (!turl) {
+        alert('URL không hợp lệ — hãy dán một liên kết TikTok đầy đủ.');
+        return;
+      }
+      window.open(turl, '_blank', 'noopener');
+    });
+  </script>
+</body>
+</html>
